@@ -92,6 +92,7 @@ mvn test
 ## 👨‍💻 Author
 
 **Manula Cooray**
+**Madara Chamudini**
 - SLIIT Y3S1 Advanced Software Engineering Assignment
 
 ## 📄 License
