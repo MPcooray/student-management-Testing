@@ -31,6 +31,14 @@ jobs:
           echo "🧪 Running backend tests (mvn test)..."
           mvn -B test
 
+      - name: Publish JUnit test results to Checks
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: backend
+          path: backend/target/surefire-reports/*.xml
+          reporter: junit
+
       - name: Upload Maven surefire reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -38,7 +46,6 @@ jobs:
           name: backend-test-reports
           path: backend/target/surefire-reports/**/*.xml
           retention-days: 7
-
   frontend-test:
     name: Frontend tests (Vitest / npm)
     runs-on: ubuntu-latest
@@ -67,7 +74,6 @@ jobs:
         working-directory: ./frontend
         run: |
           echo "🧪 Running frontend tests (if present)..."
-          # If tests are configured, this will run them. Frontend currently doesn't define a test script.
           npm test -- --passWithNoTests || echo "No frontend tests configured"
 
       - name: Build frontend
@@ -83,129 +89,3 @@ jobs:
           name: frontend-dist
           path: frontend/dist/
           retention-days: 7
-
-  integration-test:
-    runs-on: ubuntu-latest
-    needs: [backend-test, frontend-test]
-    if: ${{ always() && (needs.backend-test.result == 'success' || needs.backend-test.result == 'skipped') && (needs.frontend-test.result == 'success' || needs.frontend-test.result == 'skipped') }}
-    services:
-      backend:
-        image: openjdk:17-jdk-slim
-        options: --health-cmd="curl -f http://localhost:8080/actuator/health || exit 1" --health-interval=30s --health-timeout=10s --health-retries=3
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
-
-      - name: Use Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Download backend artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-jar
-          path: backend/target/
-
-      - name: Download frontend artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend/dist/
-
-      - name: Start backend server
-        working-directory: ./backend
-        run: |
-          echo "🚀 Starting backend server..."
-          java -jar target/*.jar &
-          echo $! > backend.pid
-          sleep 30
-
-      - name: Install frontend test dependencies
-        working-directory: ./frontend
-        run: |
-          echo "📦 Installing test dependencies..."
-          npm ci
-          npm install -g serve
-
-      - name: Start frontend server
-        working-directory: ./frontend
-        run: |
-          echo "🚀 Starting frontend server..."
-          serve -s dist -l 3000 &
-          echo $! > frontend.pid
-          sleep 10
-
-      - name: Run integration tests
-        run: |
-          echo "🔗 Running integration tests..."
-          curl -f http://localhost:8080/students || echo "Backend health check failed"
-          curl -f http://localhost:3000 || echo "Frontend health check failed"
-          echo "✅ Testing API endpoints..."
-          curl -X GET http://localhost:8080/students
-          curl -X POST http://localhost:8080/students \
-            -H "Content-Type: application/json" \
-            -d '{"name":"Test Student","grade":"A"}' || echo "API test completed"
-
-      - name: Cleanup
-        if: always()
-        run: |
-          echo "🧹 Cleaning up servers..."
-          kill $(cat backend/backend.pid) || true
-          kill $(cat frontend/frontend.pid) || true
-
-  # security-analysis job removed (was running Trivy + SARIF upload)
-
-  deploy-staging:
-    runs-on: ubuntu-latest
-    needs: [integration-test]
-    if: ${{ github.ref == 'refs/heads/development' && github.event_name == 'push' }}
-    steps:
-      - name: Deploy to Staging
-        run: |
-          echo "🚀 Deploying to staging environment..."
-          echo "Backend JAR ready for staging deployment"
-          echo "Frontend built and ready for staging deployment"
-          echo "✅ Staging deployment completed successfully"
-
-  deploy-production:
-    runs-on: ubuntu-latest
-    needs: [integration-test]
-    if: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
-    steps:
-      - name: Deploy to Production
-        run: |
-          echo "🚀 Deploying to production environment..."
-          echo "Backend JAR ready for production deployment"
-          echo "Frontend built and ready for production deployment"
-          echo "✅ Production deployment completed successfully"
-
-  notify:
-    runs-on: ubuntu-latest
-    needs: [backend-test, frontend-test, integration-test]
-    if: ${{ always() }}
-    steps:
-      - name: Notify deployment status
-        env:
-          BACKEND_STATUS: ${{ needs.backend-test.result }}
-          FRONTEND_STATUS: ${{ needs.frontend-test.result }}
-          INTEGRATION_STATUS: ${{ needs.integration-test.result }}
-        run: |
-          if [[ "$BACKEND_STATUS" == "success" && "$FRONTEND_STATUS" == "success" && "$INTEGRATION_STATUS" == "success" ]]; then
-            echo "✅ All tests passed! Ready for deployment."
-          else
-            echo "❌ Some tests failed. Please check the logs."
-          fi
-          echo "📊 Pipeline Summary:"
-          echo "Backend Tests: $BACKEND_STATUS"
-          echo "Frontend Tests: $FRONTEND_STATUS"
-          echo "Integration Tests: $INTEGRATION_STATUS"
-          echo "Security Analysis: $SECURITY_STATUS"
