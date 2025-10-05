@@ -6,7 +6,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-// ...imports unchanged...
 
 @Service
 public class StudentService {
@@ -15,7 +14,7 @@ public class StudentService {
 
     public List<Student> findAll() { return new ArrayList<>(store.values()); }
 
-    // NEW: find by grade
+    // Find by grade
     public List<Student> findByGrade(String grade) {
         return store.values().stream()
                 .filter(s -> s.getGrade().equals(grade))
@@ -32,7 +31,7 @@ public class StudentService {
 
     public Optional<Student> findById(long id) { return Optional.ofNullable(store.get(id)); }
 
-    // NEW: update grade
+    // Update grade
     public Optional<Student> updateGrade(long id, String newGrade) {
         Student s = store.get(id);
         if (s == null) return Optional.empty();
@@ -40,12 +39,12 @@ public class StudentService {
         return Optional.of(s);
     }
 
-    // NEW: delete
+    // Delete
     public boolean delete(long id) {
         return store.remove(id) != null;
     }
 
-    // for tests
+    // For tests
     public void clear() {
         store.clear();
         idSeq.set(1);
