@@ -17,7 +17,7 @@ public class StudentController {
 
     public StudentController(StudentService service) { this.service = service; }
 
-    // UPDATED: optional ?grade=A filter
+    // optional ?grade=A filter
     @GetMapping("/students")
     public List<Student> list(@RequestParam(required = false) String grade) {
         if (grade == null || grade.isBlank()) return service.findAll();
