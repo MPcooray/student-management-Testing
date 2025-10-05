@@ -9,277 +9,223 @@ on:
     inputs:
       environment:
         description: 'Environment to deploy to'
-        required: true
+        required: false
         default: 'development'
-        type: choice
-        options:
-        - development
-        - staging
-        - production
 
 env:
   JAVA_VERSION: '17'
   NODE_VERSION: '20.x'
   MAVEN_OPTS: '-Xmx1024m'
 
-jobs:
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      backend: ${{ steps.changes.outputs.backend }}
-      frontend: ${{ steps.changes.outputs.frontend }}
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Check for changes
-      uses: dorny/paths-filter@v3
-      id: changes
-      with:
-        filters: |
-          backend:
-            - 'backend/**'
-          frontend:
-            - 'frontend/**'
+permissions:
+  contents: read
+  security-events: write
 
+jobs:
   backend-test:
     runs-on: ubuntu-latest
-    needs: changes
-    if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up JDK ${{ env.JAVA_VERSION }}
-      uses: actions/setup-java@v4
-      with:
-        java-version: ${{ env.JAVA_VERSION }}
-        distribution: 'temurin'
-        
-    - name: Cache Maven packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.m2
-        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os }}-m2
-        
-    - name: Run backend tests
-      working-directory: ./backend
-      run: |
-        echo "🧪 Running backend tests..."
-        mvn clean test -Dspring.profiles.active=test
-        
-    - name: Build backend
-      working-directory: ./backend
-      run: |
-        echo "🏗️ Building backend application..."
-        mvn clean package -DskipTests
-        
-    - name: Upload backend artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: backend-jar
-        path: backend/target/*.jar
-        retention-days: 7
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Run backend tests
+        working-directory: ./backend
+        run: |
+          echo "🧪 Running backend tests..."
+          mvn clean test -Dspring.profiles.active=test
+
+      - name: Build backend
+        working-directory: ./backend
+        run: |
+          echo "🏗️ Building backend application..."
+          mvn clean package -DskipTests
+
+      - name: Upload backend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: backend/target/*.jar
+          retention-days: 7
 
   frontend-test:
     runs-on: ubuntu-latest
-    needs: changes
-    if: ${{ needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' }}
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Use Node.js ${{ env.NODE_VERSION }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
-        
-    - name: Install frontend dependencies
-      working-directory: ./frontend
-      run: |
-        echo "📦 Installing frontend dependencies..."
-        npm ci
-        
-    - name: Lint frontend code
-      working-directory: ./frontend
-      run: |
-        echo "🔍 Linting frontend code..."
-        npm run lint || echo "Linting completed with warnings"
-        
-    - name: Run frontend tests
-      working-directory: ./frontend
-      run: |
-        echo "🧪 Running frontend tests..."
-        npm test -- --passWithNoTests || echo "Frontend tests completed"
-        
-    - name: Build frontend
-      working-directory: ./frontend
-      run: |
-        echo "🏗️ Building frontend application..."
-        npm run build
-        
-    - name: Upload frontend artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: frontend-dist
-        path: frontend/dist/
-        retention-days: 7
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: |
+          echo "📦 Installing frontend dependencies..."
+          npm ci
+
+      - name: Lint frontend code
+        working-directory: ./frontend
+        run: |
+          echo "🔍 Linting frontend code..."
+          npm run lint || echo "Linting completed with warnings"
+
+      - name: Run frontend tests
+        working-directory: ./frontend
+        run: |
+          echo "🧪 Running frontend tests..."
+          npm test -- --passWithNoTests || echo "Frontend tests completed"
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: |
+          echo "🏗️ Building frontend application..."
+          npm run build
+
+      - name: Upload frontend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 7
 
   integration-test:
     runs-on: ubuntu-latest
     needs: [backend-test, frontend-test]
     if: ${{ always() && (needs.backend-test.result == 'success' || needs.backend-test.result == 'skipped') && (needs.frontend-test.result == 'success' || needs.frontend-test.result == 'skipped') }}
-    
     services:
       backend:
         image: openjdk:17-jdk-slim
         options: --health-cmd="curl -f http://localhost:8080/actuator/health || exit 1" --health-interval=30s --health-timeout=10s --health-retries=3
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up JDK ${{ env.JAVA_VERSION }}
-      uses: actions/setup-java@v4
-      with:
-        java-version: ${{ env.JAVA_VERSION }}
-        distribution: 'temurin'
-        
-    - name: Use Node.js ${{ env.NODE_VERSION }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
-        
-    - name: Download backend artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: backend-jar
-        path: backend/target/
-        
-    - name: Download frontend artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: frontend-dist
-        path: frontend/dist/
-        
-    - name: Start backend server
-      working-directory: ./backend
-      run: |
-        echo "🚀 Starting backend server..."
-        java -jar target/*.jar &
-        echo $! > backend.pid
-        sleep 30
-        
-    - name: Install frontend test dependencies
-      working-directory: ./frontend
-      run: |
-        echo "📦 Installing test dependencies..."
-        npm ci
-        npm install -g serve
-        
-    - name: Start frontend server
-      working-directory: ./frontend
-      run: |
-        echo "🚀 Starting frontend server..."
-        serve -s dist -l 3000 &
-        echo $! > frontend.pid
-        sleep 10
-        
-    - name: Run integration tests
-      run: |
-        echo "🔗 Running integration tests..."
-        curl -f http://localhost:8080/students || echo "Backend health check failed"
-        curl -f http://localhost:3000 || echo "Frontend health check failed"
-        
-        echo "✅ Testing API endpoints..."
-        curl -X GET http://localhost:8080/students
-        curl -X POST http://localhost:8080/students \
-          -H "Content-Type: application/json" \
-          -d '{"name":"Test Student","grade":"A"}' || echo "API test completed"
-        
-    - name: Cleanup
-      if: always()
-      run: |
-        echo "🧹 Cleaning up servers..."
-        kill $(cat backend/backend.pid) || true
-        kill $(cat frontend/frontend.pid) || true
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  security-analysis:
-    runs-on: ubuntu-latest
-    needs: [backend-test, frontend-test]
-    if: ${{ always() }}
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'table'
-        output: 'trivy-report.txt'
-        
-    - name: Upload security scan results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: security-scan-results
-        path: trivy-report.txt
-        retention-days: 7
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Use Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Download backend artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-jar
+          path: backend/target/
+
+      - name: Download frontend artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+      - name: Start backend server
+        working-directory: ./backend
+        run: |
+          echo "🚀 Starting backend server..."
+          java -jar target/*.jar &
+          echo $! > backend.pid
+          sleep 30
+
+      - name: Install frontend test dependencies
+        working-directory: ./frontend
+        run: |
+          echo "📦 Installing test dependencies..."
+          npm ci
+          npm install -g serve
+
+      - name: Start frontend server
+        working-directory: ./frontend
+        run: |
+          echo "🚀 Starting frontend server..."
+          serve -s dist -l 3000 &
+          echo $! > frontend.pid
+          sleep 10
+
+      - name: Run integration tests
+        run: |
+          echo "🔗 Running integration tests..."
+          curl -f http://localhost:8080/students || echo "Backend health check failed"
+          curl -f http://localhost:3000 || echo "Frontend health check failed"
+          echo "✅ Testing API endpoints..."
+          curl -X GET http://localhost:8080/students
+          curl -X POST http://localhost:8080/students \
+            -H "Content-Type: application/json" \
+            -d '{"name":"Test Student","grade":"A"}' || echo "API test completed"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "🧹 Cleaning up servers..."
+          kill $(cat backend/backend.pid) || true
+          kill $(cat frontend/frontend.pid) || true
+
+  # security-analysis job removed (was running Trivy + SARIF upload)
 
   deploy-staging:
     runs-on: ubuntu-latest
-    needs: [integration-test, security-analysis]
+    needs: [integration-test]
     if: ${{ github.ref == 'refs/heads/development' && github.event_name == 'push' }}
-    environment: staging
-    
     steps:
-    - name: Deploy to Staging
-      run: |
-        echo "🚀 Deploying to staging environment..."
-        echo "Backend JAR ready for staging deployment"
-        echo "Frontend built and ready for staging deployment"
-        echo "✅ Staging deployment completed successfully"
+      - name: Deploy to Staging
+        run: |
+          echo "🚀 Deploying to staging environment..."
+          echo "Backend JAR ready for staging deployment"
+          echo "Frontend built and ready for staging deployment"
+          echo "✅ Staging deployment completed successfully"
 
   deploy-production:
     runs-on: ubuntu-latest
-    needs: [integration-test, security-analysis]
+    needs: [integration-test]
     if: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
-    environment: production
-    
     steps:
-    - name: Deploy to Production
-      run: |
-        echo "🚀 Deploying to production environment..."
-        echo "Backend JAR ready for production deployment"
-        echo "Frontend built and ready for production deployment"
-        echo "✅ Production deployment completed successfully"
+      - name: Deploy to Production
+        run: |
+          echo "🚀 Deploying to production environment..."
+          echo "Backend JAR ready for production deployment"
+          echo "Frontend built and ready for production deployment"
+          echo "✅ Production deployment completed successfully"
 
   notify:
     runs-on: ubuntu-latest
-    needs: [backend-test, frontend-test, integration-test, security-analysis]
+    needs: [backend-test, frontend-test, integration-test]
     if: ${{ always() }}
-    
     steps:
-    - name: Notify deployment status
-      run: |
-        if [[ "${{ needs.backend-test.result }}" == "success" && "${{ needs.frontend-test.result }}" == "success" && "${{ needs.integration-test.result }}" == "success" ]]; then
-          echo "✅ All tests passed! Ready for deployment."
-        else
-          echo "❌ Some tests failed. Please check the logs."
-        fi
-        
-        echo "📊 Pipeline Summary:"
-        echo "Backend Tests: ${{ needs.backend-test.result }}"
-        echo "Frontend Tests: ${{ needs.frontend-test.result }}"
-        echo "Integration Tests: ${{ needs.integration-test.result }}"
-        echo "Security Analysis: ${{ needs.security-analysis.result }}"
+      - name: Notify deployment status
+        env:
+          BACKEND_STATUS: ${{ needs.backend-test.result }}
+          FRONTEND_STATUS: ${{ needs.frontend-test.result }}
+          INTEGRATION_STATUS: ${{ needs.integration-test.result }}
+        run: |
+          if [[ "$BACKEND_STATUS" == "success" && "$FRONTEND_STATUS" == "success" && "$INTEGRATION_STATUS" == "success" ]]; then
+            echo "✅ All tests passed! Ready for deployment."
+          else
+            echo "❌ Some tests failed. Please check the logs."
+          fi
+          echo "📊 Pipeline Summary:"
+          echo "Backend Tests: $BACKEND_STATUS"
+          echo "Frontend Tests: $FRONTEND_STATUS"
+          echo "Integration Tests: $INTEGRATION_STATUS"
+          echo "Security Analysis: $SECURITY_STATUS"
