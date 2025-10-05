@@ -16,7 +16,7 @@ export default function App() {
       const qs = currentFilter === "ALL" ? "" : `?grade=${currentFilter}`;
       const res = await fetch(`${API_BASE}/students${qs}`);
       const data = await res.json();
-      console.log("Loaded students:", data); // Debug log
+      console.log("Loaded students:", data); 
       setStudents(data);
     } catch {
       setErr("Failed to load students");
