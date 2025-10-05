@@ -1,3 +1,8 @@
+# CI badges
+
+[![Backend CI - Tests](https://github.com/MPcooray/student-management-Testing/actions/workflows/backend-tests.yml/badge.svg?branch=development)](https://github.com/MPcooray/student-management-Testing/actions/workflows/backend-tests.yml)
+[![Full CI](https://github.com/MPcooray/student-management-Testing/actions/workflows/full-stack-ci.yml/badge.svg?branch=development)](https://github.com/MPcooray/student-management-Testing/actions/workflows/full-stack-ci.yml)
+
 # 🎓 Student Management System
 
 A modern, full-stack web application for managing student records with a beautiful UI and comprehensive CRUD operations.

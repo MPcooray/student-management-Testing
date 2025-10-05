@@ -41,3 +41,9 @@ jobs:
           name: backend-test-reports
           path: backend/target/surefire-reports/**/*.xml
           retention-days: 7
+
+      - name: Create job summary (tests)
+        if: always()
+        working-directory: ./backend
+        run: |
+          python -u ../.github/scripts/parse_surefire.py $GITHUB_STEP_SUMMARY target/surefire-reports/*.xml || true
