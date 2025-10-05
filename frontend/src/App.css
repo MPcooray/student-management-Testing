@@ -1,4 +1,4 @@
-/* Modern Student Management App Styles */
+/* Student Management App Styles */
 .app-container {
   max-width: 900px;
   margin: 2rem auto;
@@ -375,7 +375,7 @@
   transform: translateY(0);
 }
 
-/* Enhanced Table Styles */
+/* Table Styles */
 .table-row:hover .grade-select {
   border-color: #cbd5e0;
 }
@@ -400,7 +400,7 @@
   opacity: 0.5;
 }
 
-/* Mobile Responsiveness for New Elements */
+/* Mobile Responsiveness*/
 @media (max-width: 768px) {
   .filter-container {
     padding: 1.25rem;
