@@ -17,7 +17,7 @@ public class StudentController {
 
     public StudentController(StudentService service) { this.service = service; }
 
-    // optional ?grade=A filter
+    // Filter by grade
     @GetMapping("/students")
     public List<Student> list(@RequestParam(required = false) String grade) {
         if (grade == null || grade.isBlank()) return service.findAll();
@@ -39,14 +39,14 @@ public class StudentController {
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "student not found"));
     }
 
-    // NEW: update grade
+    // Update grade
     @PutMapping("/students/{id}")
     public Student update(@PathVariable long id, @Valid @RequestBody StudentUpdateRequest req) {
         return service.updateGrade(id, req.getGrade())
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "student not found"));
     }
 
-    // NEW: delete
+    // Delete
     @DeleteMapping("/students/{id}")
     public ResponseEntity<Void> delete(@PathVariable long id) {
         boolean removed = service.delete(id);
