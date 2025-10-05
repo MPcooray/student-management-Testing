@@ -53,6 +53,7 @@ jobs:
           python -u ../.github/scripts/parse_surefire.py $GITHUB_STEP_SUMMARY target/surefire-reports/*.xml || true
   frontend-test:
     name: Frontend tests (Vitest / npm)
+    needs: backend-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
