@@ -7,7 +7,7 @@ public class StudentCreateRequest {
     @NotBlank(message = "name is required")
     private String name;
 
-    // Accept only A-F (uppercase)
+    // Accept only A-F (uppercase) as grades
     @Pattern(regexp = "A|B|C|D|E|F", message = "grade must be one of A,B,C, D, E, F")
     private String grade;
 
