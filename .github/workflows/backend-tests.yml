@@ -27,13 +27,13 @@ jobs:
           echo "Running backend tests..."
           mvn -B test
 
-      - name: Publish JUnit test results to Checks
+      - name: Publish test results to Checks
         uses: dorny/test-reporter@v1
         if: always()
         with:
           name: backend
           path: backend/target/surefire-reports/*.xml
-          reporter: junit
+          reporter: maven-surefire
 
       - name: Upload surefire reports
         uses: actions/upload-artifact@v4

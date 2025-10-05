@@ -37,7 +37,7 @@ jobs:
         with:
           name: backend
           path: backend/target/surefire-reports/*.xml
-          reporter: junit
+          reporter: maven-surefire
 
       - name: Upload Maven surefire reports
         uses: actions/upload-artifact@v4
