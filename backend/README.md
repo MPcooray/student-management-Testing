@@ -24,3 +24,6 @@ mvn -f backend\pom.xml package -DskipTests
 
 Notes:
 - Maven's surefire plugin produces XML reports in backend/target/surefire-reports/ which CI uploads as artifacts.
+
+<!-- Database/Cloud DB instructions removed per repository owner request. The backend now uses an in-memory implementation and does not require Postgres or Supabase. -->
+

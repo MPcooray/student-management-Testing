@@ -44,6 +44,7 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- NOTE: Database/JPA removed - this project uses an in-memory service implementation now -->
   </dependencies>
 
   <build>

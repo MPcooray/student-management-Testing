@@ -1,4 +1,4 @@
-package com.example.students;
+package com.example.students.controllers;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
