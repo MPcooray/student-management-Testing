@@ -94,6 +94,65 @@ cd backend
 mvn test
 ```
 
+## ✅ Code coverage & CI
+
+We collect code coverage for the backend using JaCoCo. The project includes a JaCoCo Maven plugin that generates HTML and XML reports when you run the tests.
+
+Local commands (inside the repository):
+
+Windows (cmd):
+```cmd
+cd backend
+mvn test jacoco:report
+start "" "target\site\jacoco\index.html"
+```
+
+macOS / Linux (bash):
+```bash
+cd backend
+mvn test jacoco:report
+open target/site/jacoco/index.html
+```
+
+Where to find the reports:
+- HTML report (readable): `backend/target/site/jacoco/index.html`
+- XML report (for CI upload / badge providers): `backend/target/site/jacoco/jacoco.xml`
+- JaCoCo exec file: `backend/target/jacoco.exec`
+
+CI integration (recommended)
+- Option A: Upload the `jacoco.xml` to a coverage provider (Codecov, SonarCloud).
+	Example (Codecov action snippet) to add in your test workflow after running tests:
+
+```yaml
+- name: Upload coverage to Codecov
+	uses: codecov/codecov-action@v4
+	with:
+		files: backend/target/site/jacoco/jacoco.xml
+		fail_ci_if_error: true
+```
+
+- Option B: Publish the HTML report as a workflow artifact (so reviewers can download and view):
+
+```yaml
+- name: Upload Jacoco HTML report
+	uses: actions/upload-artifact@v4
+	with:
+		name: jacoco-report
+		path: backend/target/site/jacoco
+```
+
+Adding a coverage badge to this README
+- If you use Codecov, after the repository is connected on codecov.io you can add the following badge to the top of this README (replace `MPcooray/student-management-Testing` with your repo path):
+
+```markdown
+[![Coverage Status](https://codecov.io/gh/MPcooray/student-management-Testing/branch/Testing/graph/badge.svg?token=YOUR_CODECOV_TOKEN)](https://codecov.io/gh/MPcooray/student-management-Testing)
+```
+
+Notes and suggestions
+- JaCoCo generates `jacoco.xml` which is widely accepted by coverage services. Use that for CI uploads.
+- For the assignment/demo we already have ~98% coverage locally — you can either keep the small `StudentsApplication` main uncovered or add a tiny test to exercise or exclude it from JaCoCo if you want 100%.
+
+
 ## 👨‍💻 Author
 
 **Manula Cooray**
