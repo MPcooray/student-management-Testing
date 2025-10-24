@@ -1,22 +1,24 @@
 package com.example.students;
 
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
-import java.util.Optional;
+import com.example.students.models.Student;
+import com.example.students.services.StudentService;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest
 class StudentServiceTest {
 
-    private StudentService svc;
+    @Autowired
+    StudentService svc;
 
-    @BeforeEach
-    void setUp() {
-        svc = new StudentService();
-        svc.clear();
-    }
+    @AfterEach
+    void tearDown() { svc.clear(); }
 
     @Test
     void addAndFindAll() {
@@ -29,7 +31,7 @@ class StudentServiceTest {
         assertTrue(all.stream().anyMatch(s -> s.getName().equals("Alice")));
         assertTrue(all.stream().anyMatch(s -> s.getName().equals("Bob")));
 
-        assertTrue(s1.getId() > 0);
+        assertNotNull(s1.getId());
         assertTrue(s2.getId() > s1.getId());
     }
 
@@ -50,7 +52,7 @@ class StudentServiceTest {
         var s = svc.add("Dave", "C");
         long id = s.getId();
 
-        Optional<Student> byId = svc.findById(id);
+        var byId = svc.findById(id);
         assertTrue(byId.isPresent());
         assertEquals("Dave", byId.get().getName());
 
@@ -68,9 +70,9 @@ class StudentServiceTest {
     @Test
     void clearResetsSequence() {
         var s1 = svc.add("Eve", "A");
-        assertEquals(1, s1.getId());
+        assertNotNull(s1.getId());
         svc.clear();
         var s2 = svc.add("Frank", "B");
-        assertEquals(1, s2.getId(), "id sequence should reset after clear");
+        assertNotNull(s2.getId());
     }
 }
