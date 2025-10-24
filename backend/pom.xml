@@ -90,8 +90,8 @@
             </goals>
             <configuration>
               <formats>
-                <format>html</format>
-                <format>xml</format>
+                <format>HTML</format>
+                <format>XML</format>
               </formats>
             </configuration>
           </execution>

@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests for classes that live in the root package: StudentsApplication and the
  * root-level StudentUpdateRequest.
  */
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 class RootDtoAndAppTest {
 
     @Test
@@ -31,6 +31,7 @@ class RootDtoAndAppTest {
     @Test
     void invokeMainMethod() {
         // call main to ensure StudentsApplication.main is executed for coverage
-        StudentsApplication.main(new String[]{});
+        // pass a property to disable starting a real web server so tests don't fail if port 8080 is in use
+        StudentsApplication.main(new String[]{"--spring.main.web-application-type=none"});
     }
 }
