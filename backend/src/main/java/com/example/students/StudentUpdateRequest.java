@@ -3,7 +3,7 @@ package com.example.students;
 import jakarta.validation.constraints.Pattern;
 
 public class StudentUpdateRequest {
-    // Only grade is editable in this mini-app
+    // Only grade is editable
     @Pattern(regexp = "A|B|C|D|E|F", message = "grade must be one of A,B,C,D,E,F")
     private String grade;
 
