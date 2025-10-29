@@ -107,6 +107,11 @@ mvn test jacoco:report
 start "" "target\site\jacoco\index.html"
 ```
 
+To open the JaCoCo report from PowerShell with the same behavior as cmd.exe, run:
+```cmd
+Start-Process -FilePath 'cmd.exe' -ArgumentList '/c start "" "target\site\jacoco\index.html"'
+```
+
 macOS / Linux (bash):
 ```bash
 cd backend
